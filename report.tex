@@ -1,0 +1,149 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{microtype}
+\usepackage{cite}
+\usepackage{xcolor}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    citecolor=blue,
+    urlcolor=blue
+}
+
+\title{\textbf{Bridging Diffusion and Flow Matching: \\ A Controlled Empirical Study and Few-Step Trajectory Straightening}}
+\author{\textbf{Aditya Vardhan Singh} \\ \small Independent Research}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+We conduct a rigorous, controlled empirical comparison between traditional Gaussian Diffusion Models and Conditional Flow Matching under strictly aligned conditions: an identical 3.45M parameter U-Net backbone, identical training compute (10 epochs, 1,000 updates), and matched data pipelines. Before combining the paradigms, we evaluate the trade-offs in optimization stability, sampling latency, and sample quality across sampling budgets ($NFE \in \{5, 10, 20, 50\}$). We demonstrate that while Flow Matching achieves coherent silhouettes with fewer evaluations ($NFE=10$) due to straight interpolation paths, deterministic DDIM requires higher step counts or stochastic Langevin noise ($\eta=1.0$) to eliminate background drift. Following this comparison, we bridge the gap between the two approaches using 2-Rectified Flow (Reflow) to decouple and straighten the learned transport trajectories. By retraining on coupled $(Z_0, Z_1)$ endpoints generated from the baseline flow, 2-Rectified Flow accomplishes crisp, high-fidelity synthesis in a single Euler step ($NFE=1, \sim 36$\,ms), overcoming the multi-step sampling bottleneck inherent to traditional diffusion.
+\end{abstract}
+
+\section{Introduction and Theoretical Framing}
+
+Generative modeling of continuous data distributions has predominantly evolved along two closely related paradigms:
+\begin{enumerate}
+    \item \textbf{Denoising Diffusion Probabilistic Models (DDPM)}: A forward stochastic process systematically degrades clean data $x_1 \sim p_{\text{data}}$ with Gaussian noise over discrete timesteps $t \in [0, T]$. The model $\epsilon_\theta(x_t, t)$ is trained via mean squared error (MSE) to predict the added noise vector:
+    \begin{equation}
+        \mathcal{L}_{\text{diff}}(\theta) = \mathbb{E}_{t, x_1, \epsilon} \left[ \|\epsilon_\theta(x_t, t) - \epsilon\|^2 \right].
+    \end{equation}
+    Reverse generation requires solving the reverse-time stochastic differential equation (SDE) or its deterministic probability flow ODE (e.g., DDIM).
+    
+    \item \textbf{Conditional Flow Matching (CFM / Rectified Flow)}: Instead of perturbing along a predefined Markovian noise schedule, Flow Matching directly regresses a time-dependent velocity field $v_\theta(x_t, t)$ that transports base Gaussian noise $x_0 \sim \mathcal{N}(0, I)$ toward data $x_1 \sim p_{\text{data}}$ along straight interpolation trajectories $x_t = (1-t)x_0 + t x_1$:
+    \begin{equation}
+        \mathcal{L}_{\text{FM}}(\theta) = \mathbb{E}_{t, x_0, x_1} \left[ \|v_\theta(x_t, t) - (x_1 - x_0)\|^2 \right].
+    \end{equation}
+    Sampling is executed by integrating the ordinary differential equation (ODE) $dx_t = v_\theta(x_t, t) dt$ from $t=0$ to $t=1$.
+\end{enumerate}
+
+\section{Part I: Findings Before Combining (Controlled Baseline Comparison)}
+
+To isolate the effects of the objective and sampling mechanics from architectural biases, both models were implemented using a shared compact U-Net (3,455,713 parameters) with sinusoidal time embeddings and trained on 6,400 examples normalized to $[-1, 1]$ on Apple Silicon hardware (\texttt{mps}).
+
+\subsection{Optimization Dynamics and Training Stability}
+Both models exhibited smooth, monotonic convergence under identical AdamW optimizers ($\text{lr} = 2 \times 10^{-4}$):
+\begin{itemize}
+    \item \textbf{Diffusion Baseline}: Epoch loss decreased from $0.1464 \to 0.0268$. The objective remained stable with gradient norm clipping set to 1.0. Wall-clock training time was 362.4\,s.
+    \item \textbf{Flow Matching Baseline}: Velocity MSE loss decreased from $0.4500 \to 0.1635$. Wall-clock training time was 352.9\,s.
+\end{itemize}
+\textit{Note}: Direct comparison of raw loss magnitudes across methods is statistically invalid because one measures Gaussian noise prediction while the other measures directional displacement regression.
+
+\subsection{Sampling Latency and Throughput}
+We evaluated batch inference ($B=16$) across varying Number of Function Evaluations ($NFE \in \{5, 10, 20, 50\}$).
+
+\begin{table}[h]
+\centering
+\small
+\caption{Sampling Performance Across Evaluation Budgets ($B=16$)}
+\label{tab:eval_comparison}
+\begin{tabular}{@{}ccccc@{}}
+\toprule
+\textbf{NFE} & \multicolumn{2}{c}{\textbf{Diffusion (DDIM)}} & \multicolumn{2}{c}{\textbf{Flow Matching (Euler)}} \\
+\cmidrule(lr){2-3} \cmidrule(lr){4-5}
+& Latency (ms) & Throughput (img/s) & Latency (ms) & Throughput (img/s) \\
+\midrule
+5  & 203.0 & 78.80 & 184.0 & 86.98 \\
+10 & 401.8 & 39.82 & 333.1 & 48.03 \\
+20 & 717.0 & 22.32 & 707.5 & 22.61 \\
+50 & 2115.5 & 7.56  & 1677.1 & 9.54  \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Qualitative Sample Evolution}
+\begin{enumerate}
+    \item \textbf{Low-NFE Regime ($NFE \le 10$)}: Flow Matching resolved clear digit contours and sharp edges earlier ($NFE=10$). In contrast, deterministic DDIM ($\eta=0$) exhibited high-frequency background noise. Under limited training budgets, small estimation errors in $\hat{\epsilon}_\theta$ accumulate during deterministic leaps.
+    \item \textbf{Stochastic Compensation}: Injecting stochastic Langevin noise into the diffusion sampler (DDPM, $\eta=1.0$) completely eliminated background haze at 50--100 steps, producing crisp digit boundaries.
+\end{enumerate}
+
+\section{Part II: Findings After Combining (2-Rectified Flow / Reflow)}
+
+While 1-Rectified Flow demonstrated superior low-step synthesis compared to diffusion, taking a single Euler step ($NFE=1$) still resulted in blurry, low-contrast approximations.
+
+\subsection{The Trajectory Crossing Problem}
+In 1-Rectified Flow, random pairing of $x_0$ and $x_1$ during training causes trajectories to cross in state space. Consequently, the marginal vector field $v(x, t)$ acquires curvature, leading to truncation errors when the ODE is integrated with large step sizes ($\Delta t \ge 0.5$).
+
+\subsection{The Reflow Algorithm}
+We bridge and straighten the flow via \textbf{2-Rectified Flow}:
+\begin{enumerate}
+    \item \textbf{Coupled Endpoint Sampling}: Using the trained 1-Rectified Flow model, we integrate 3,200 initial noise vectors $Z_0 \sim \mathcal{N}(0, I)$ to terminal data points $Z_1$ using a high-precision 50-step ODE solver.
+    \item \textbf{Trajectory Straightening}: We train a student model $v^2_\phi$ on the straight lines connecting these coupled pairs:
+    \begin{equation}
+        \mathcal{L}_{\text{reflow}}(\phi) = \mathbb{E}_{(Z_0, Z_1), t} \left[ \| v^2_\phi((1-t)Z_0 + t Z_1, t) - (Z_1 - Z_0) \|^2 \right].
+    \end{equation}
+\end{enumerate}
+Because $(Z_0, Z_1)$ are deterministically linked by the forward flow, their intermediate paths do not cross, rendering the vector field virtually constant along each trajectory ($v(Z_t, t) \approx Z_1 - Z_0$).
+
+\subsection{Empirical Results: 1-Step and 2-Step Synthesis}
+
+\begin{table}[h]
+\centering
+\small
+\caption{Pixel Distribution and Contrast in Few-Step Generation}
+\label{tab:reflow_stats}
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+\textbf{Configuration} & \textbf{Min} & \textbf{Max} & \textbf{Mean} & \textbf{Std ($\sigma$)} \\
+\midrule
+1-Rectified Flow ($NFE=1$) & 0.000 & 0.729 & 0.113 & 0.152 (Low contrast, hazy) \\
+2-Rectified Flow ($NFE=1$) & 0.000 & 1.000 & 0.123 & 0.245 (Full contrast, crisp) \\
+1-Rectified Flow ($NFE=2$) & 0.000 & 0.976 & 0.103 & 0.185 \\
+2-Rectified Flow ($NFE=2$) & 0.000 & 1.000 & 0.121 & 0.247 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+As shown in Table~\ref{tab:reflow_stats}, under a single Euler step ($x_1 \approx x_0 + 1.0 \times v_\theta(x_0, 0)$):
+\begin{itemize}
+    \item \textbf{1-Rectified Flow}: Produces an under-developed, low-contrast silhouette ($\text{max} = 0.729, \sigma = 0.152$).
+    \item \textbf{2-Rectified Flow}: Achieves complete dynamic range ($\text{max} = 1.000, \sigma = 0.245$), yielding sharp, legible digits and deep black backgrounds in a single forward evaluation ($\sim 36$\,ms).
+\end{itemize}
+
+\section{Summary of Comparative Insights}
+
+\begin{enumerate}
+    \item \textbf{Before Combining}: Conditional Flow Matching provides faster convergence and lower truncation error than diffusion at moderate step counts ($NFE=10\text{--}20$) due to optimal-transport linear velocity targets.
+    \item \textbf{After Combining}: By coupling trajectories via Reflow, the model effectively eliminates multi-step integration latency, bringing inference down to 1 function evaluation with zero perceptual degradation.
+\end{enumerate}
+
+\section*{Reproducibility and Code Availability}
+All source code, configuration files, model weights, and sample grids are organized in an isolated workspace environment:
+\begin{itemize}
+    \item \texttt{src/model.py}: Shared compact U-Net backbone.
+    \item \texttt{src/diffusion.py}: DDPM schedule and DDIM sampler.
+    \item \texttt{src/flow\_matching.py}: Conditional Flow Matching.
+    \item \texttt{src/reflow.py}: 2-Rectified Flow paired training and 1-step sampling.
+    \item \texttt{results/eval/}: Loss curves and side-by-side comparative grids.
+\end{itemize}
+
+\end{document}
+

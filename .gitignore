@@ -1,0 +1,8 @@
+# Isolated environment & generated data/artifacts
+.venv/
+data/
+results/
+__pycache__/
+*.py[cod]
+.DS_Store
+

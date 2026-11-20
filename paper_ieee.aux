@@ -1,0 +1,68 @@
+\relax 
+\citation{ho2020denoising}
+\citation{song2019generative,song2020score}
+\citation{goodfellow2014generative}
+\citation{ramesh2022hierarchical}
+\citation{rombach2022high}
+\citation{song2020denoising}
+\citation{chen2018neural}
+\citation{lipman2022flow}
+\citation{liu2022flow,albergo2022building}
+\citation{esser2024scaling}
+\@writefile{toc}{\contentsline {section}{\numberline {I}Introduction}{1}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {II}Mathematical Framework and Unification}{1}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {II-A}}Variance-Preserving Diffusion Models}{1}{}\protected@file@percent }
+\citation{song2020score}
+\citation{song2020denoising}
+\citation{lipman2022flow}
+\citation{liu2022flow}
+\newlabel{eq:prob_flow_ode}{{5}{2}{}{equation.5}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {II-B}}Conditional Flow Matching and Rectified Flow}{2}{}\protected@file@percent }
+\@writefile{loa}{\contentsline {algorithm}{\numberline {1}{\ignorespaces Training Baseline Models (Diffusion vs. Flow Matching)}}{2}{}\protected@file@percent }
+\newlabel{alg:training_comparison}{{1}{2}{}{algorithm.1}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {III}System Architecture and Implementation}{2}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {III-A}}Backbone Neural Architecture}{2}{}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces Training loss curves over 1,000 optimization updates on Apple Silicon GPU (\texttt  {mps}). Left: Diffusion baseline ($\epsilon $-prediction MSE). Right: Flow Matching baseline (velocity regression MSE).}}{3}{}\protected@file@percent }
+\newlabel{fig:loss_curves}{{1}{3}{}{figure.1}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {III-B}}Experimental Controls}{3}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {IV}Part I: Findings Before Combining (Controlled Baseline Comparison)}{3}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {IV-A}}Optimization Stability and Dynamics}{3}{}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {I}{\ignorespaces Inference Latency, Throughput, and Computational Cost Across NFE Budgets ($B=16$ on \texttt  {mps})}}{3}{}\protected@file@percent }
+\newlabel{tab:sampling_benchmarks}{{I}{3}{}{table.1}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {IV-B}}Sampling Performance and Latency Trade-Offs}{3}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {IV-C}}Qualitative Sample Evolution and Failure Modes}{3}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {V}Part II: Findings After Combining (2-Rectified Flow / Reflow)}{3}{}\protected@file@percent }
+\citation{liu2022flow}
+\citation{liu2022flow}
+\citation{salimans2022progressive}
+\citation{song2023consistency}
+\@writefile{loa}{\contentsline {algorithm}{\numberline {2}{\ignorespaces 2-Rectified Flow (Reflow) Trajectory Straightening}}{4}{}\protected@file@percent }
+\newlabel{alg:reflow}{{2}{4}{}{algorithm.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {V-A}}The Trajectory Crossing Problem}{4}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {V-B}}The 2-Rectified Flow (Reflow) Algorithm}{4}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {V-C}}Theoretical Guarantee of Straightening}{4}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {V-D}}Empirical Validation of Single-Step Synthesis}{4}{}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {II}{\ignorespaces Statistical Distribution and Contrast Across Few-Step Budgets}}{4}{}\protected@file@percent }
+\newlabel{tab:pixel_stats}{{II}{4}{}{table.2}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {VI}Discussion and Limitations}{4}{}\protected@file@percent }
+\bibcite{ho2020denoising}{1}
+\bibcite{song2019generative}{2}
+\bibcite{song2020score}{3}
+\bibcite{song2020denoising}{4}
+\bibcite{lipman2022flow}{5}
+\bibcite{liu2022flow}{6}
+\bibcite{albergo2022building}{7}
+\bibcite{chen2018neural}{8}
+\bibcite{goodfellow2014generative}{9}
+\bibcite{rombach2022high}{10}
+\bibcite{ramesh2022hierarchical}{11}
+\bibcite{esser2024scaling}{12}
+\bibcite{salimans2022progressive}{13}
+\bibcite{song2023consistency}{14}
+\@writefile{toc}{\contentsline {section}{\numberline {VII}Conclusion}{5}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{References}{5}{}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces Controlled qualitative comparison between Diffusion (DDIM, left) and Flow Matching (Euler, right) across sampling budgets $NFE \in \{5, 10, 20, 50\}$ under identical model capacity and training compute.}}{6}{}\protected@file@percent }
+\newlabel{fig:comparative_grid}{{2}{6}{}{figure.2}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces Few-step synthesis comparison between 1-Rectified Flow (left column) and 2-Rectified Flow / Reflow (right column) across budgets $NFE \in \{1, 2, 4, 8\}$ under identical starting noise vectors.}}{7}{}\protected@file@percent }
+\newlabel{fig:reflow_comparison}{{3}{7}{}{figure.3}{}}
+\gdef \@abspage@last{7}

@@ -1,0 +1,27 @@
+{
+  "run_name": "diffusion_baseline",
+  "method": "diffusion",
+  "dataset": "mnist",
+  "seed": 42,
+  "batch_size": 128,
+  "max_samples": null,
+  "data_dir": "./data",
+  "model": {
+    "base_channels": 32,
+    "channel_mults": [1, 2, 4],
+    "time_dim": 128
+  },
+  "diffusion": {
+    "timesteps": 1000,
+    "beta_start": 0.0001,
+    "beta_end": 0.02
+  },
+  "training": {
+    "epochs": 15,
+    "lr": 0.0003,
+    "weight_decay": 0.0001
+  },
+  "log_interval": 50,
+  "sample_interval": 3,
+  "save_interval": 3
+}
